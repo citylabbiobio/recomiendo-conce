@@ -3,6 +3,7 @@ import { loadData } from './dataLoader.js';
 import { setupForm } from './formHandler.js';
 import { setupFilters, getActiveFilters } from './filters.js';
 import { initSearch } from './search.js';
+import { clearModal } from './modal.js'; // 👈 Importar clearModal
 import { supabase } from './supabaseClient.js';
 
 // 🚀 Inicialización principal
@@ -37,6 +38,14 @@ document.addEventListener('DOMContentLoaded', () => {
     if (submitModalEl) {
         const modal = new bootstrap.Modal(submitModalEl);
         modal.show();
+    }
+
+    // 🔥 AQUÍ VA EL CÓDIGO DEL MODAL INFO - Limpiar modal antes de mostrar contenido
+    const infoModalEl = document.getElementById('infoModal');
+    if (infoModalEl) {
+        infoModalEl.addEventListener('show.bs.modal', () => {
+            clearModal(); // 👈 Limpiar contenido previo del modal
+        });
     }
 
     // Botón para abrir modal manualmente (si lo necesitas)
@@ -77,8 +86,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-
-
 // 🔁 Auto-refresh controlado
 let autoRefreshEnabled = true;
 
@@ -93,15 +100,15 @@ function disableAutoRefresh() {
 // 🔄 Auto-refresh del mapa cada 10s (solo si no hay filtros ni popup abierto)
 setInterval(() => {
     const popupVisible = document.querySelector('.mapboxgl-popup.open');
+    const modalVisible = document.querySelector('.modal.show'); // 👈 También verificar modales abiertos
     const { category, comuna } = getActiveFilters();
     const filtersActive = category !== null || comuna !== null;
 
-    if (!popupVisible && autoRefreshEnabled && !filtersActive) {
+    if (!popupVisible && !modalVisible && autoRefreshEnabled && !filtersActive) {
         loadData();
         console.log('Mapa actualizado automáticamente');
     }
 }, 10000);
-
 
 // 📦 Cargar SVG inline
 async function loadSVGInline(path, targetSelector) {
@@ -114,7 +121,6 @@ async function loadSVGInline(path, targetSelector) {
         console.error("Error cargando SVG:", error);
     }
 }
-
 
 // 🌐 Geocoding seguro via Edge Function
 async function geocodeGoogle(query) {

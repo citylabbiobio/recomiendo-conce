@@ -1,6 +1,6 @@
 import { supabase } from './supabaseClient.js';
 
-//Modal con info del lugar
+// Modal original para lugares individuales
 export async function populateModal(lugar) {
     let selectedRating = null;
 
@@ -12,71 +12,90 @@ export async function populateModal(lugar) {
     document.getElementById('modal-categoria').innerText = lugar.categoria;
     document.getElementById('modal-direccion').innerText = lugar.formatted_address ?? lugar.comuna;
 
-    document.getElementById('modal-rating').innerHTML = `
-        <span class="rating-promedio">${promedio}</span>
-        <br>
-        <span class="rating-votos">${ratings.length} votos</span>
-    `;
+    // Resto del código de ratings...
+}
 
-    const container = document.getElementById('rating-container');
-    const responseEl = document.querySelector('.rating-response');
-    container.innerHTML = '';
-    responseEl.innerText = '';
+// Nueva función para lugares consolidados
+export async function populateConsolidadoModal(lugar) {
+    document.getElementById('modal-titulo').innerText = lugar.ultimo_nombre || 'Lugar Popular';
+    document.getElementById('modal-categoria').innerText = lugar.ultima_categoria || 'Varios';
+    document.getElementById('modal-direccion').innerText = lugar.formatted_address;
 
-    // Crear estrellas de rating
-    const stars = [];
-    for (let i = 1; i <= 5; i++) {
-        const star = document.createElement('span');
-        star.className = 'star';
-        star.dataset.value = i;
-        star.innerText = '★';
+    // Crear sección especial para mostrar las estadísticas
+    const statsContainer = document.querySelector('.modal-body .info-row');
+    if (statsContainer) {
+        // Añadir nueva fila con estadísticas
+        const statsRow = document.createElement('div');
+        statsRow.className = 'info-row mt-3';
+        statsRow.innerHTML = `
+            <div class="info-box" style="background-color: #28a745; color: white;">
+                <div class="text-center">
+                    <div style="font-size: 2.5rem; font-weight: bold;">${lugar.total_registros}</div>
+                    <div style="font-size: 1rem;">Recomendaciones</div>
+                </div>
+            </div>
+            <div class="info-box" style="background-color: #17a2b8; color: white;">
+                <div class="text-center">
+                    <div style="font-size: 1.2rem; font-weight: bold;">🔥 Lugar Popular</div>
+                    <div style="font-size: 0.9rem;">Recomendado por múltiples usuarios</div>
+                </div>
+            </div>
+        `;
 
-        star.addEventListener('click', async () => {
-            if (selectedRating !== null) return;
+        statsContainer.parentNode.insertBefore(statsRow, statsContainer.nextSibling);
+    }
 
-            const value = parseInt(star.dataset.value);
-            selectedRating = value;
+    // Cargar los registros individuales que formaron este lugar consolidado
+    await loadRegistrosOriginales(lugar.id);
+}
 
-            // Visual feedback
-            stars.forEach((s, index) => {
-                s.classList.toggle('selected', index < value);
-                s.classList.add('disabled');
-            });
+/**
+ * Carga y muestra los registros originales que formaron el lugar consolidado
+ */
+async function loadRegistrosOriginales(consolidadoId) {
+    const { data: registros, error } = await supabase
+        .from('lugares')
+        .select('lugar, categoria, comuna, created_at')
+        .eq('lugar_consolidado_id', consolidadoId) // Asumiendo que tienes esta relación
+        .order('created_at', { ascending: false })
+        .limit(5);
 
-            const comentario = document.getElementById('floatingTextarea')?.value.trim() || null;
+    if (error) {
+        console.error('Error cargando registros originales:', error);
+        return;
+    }
 
-            const { error } = await supabase.from('ratings').insert([
-                {
-                    lugar_id: lugar.id,
-                    rating: value,
-                    comentario: comentario
-                }
-            ]);
+    if (registros && registros.length > 0) {
+        const registrosContainer = document.createElement('div');
+        registrosContainer.className = 'registros-originales mt-4';
+        registrosContainer.innerHTML = `
+            <h6 class="text-white mb-3">🔍 Últimas recomendaciones:</h6>
+            <div class="registros-list">
+                ${registros.map(r => `
+                    <div class="registro-item" style="
+                        background-color: #333; 
+                        padding: 0.75rem; 
+                        margin-bottom: 0.5rem; 
+                        border-radius: 8px;
+                        border-left: 4px solid #ffcc05;
+                    ">
+                        <div style="font-weight: bold; color: #ffcc05;">${r.lugar}</div>
+                        <small style="color: #ccc;">
+                            ${r.categoria} • ${r.comuna} • ${new Date(r.created_at).toLocaleDateString()}
+                        </small>
+                    </div>
+                `).join('')}
+            </div>
+        `;
 
-            if (error) {
-                responseEl.innerText = 'Error guardando rating, intenta luego.';
-                console.error(error);
-                return;
-            }
-
-            document.getElementById('floatingTextarea').value = '';
-
-            const { data: updatedRatings } = await supabase
-                .from('ratings')
-                .select('rating')
-                .eq('lugar_id', lugar.id);
-
-            const newSuma = updatedRatings.reduce((acc, r) => acc + r.rating, 0);
-            const newProm = updatedRatings.length ? (newSuma / updatedRatings.length).toFixed(1) : 'Sin votos';
-
-            document.getElementById('modal-rating').innerHTML = `
-                <span class="rating-promedio">${newProm}</span>
-                <br>
-                <span class="rating-votos">${updatedRatings.length} votos</span>
-            `;
-        });
-
-        container.appendChild(star);
-        stars.push(star);
+        document.querySelector('.modal-body').appendChild(registrosContainer);
     }
 }
+
+/**
+ * Limpia el modal antes de mostrar nuevo contenido
+ */
+export function clearModal() {
+    // Remover elementos dinámicos añadidos anteriormente
+    const dynamicElements = document.querySelectorAll('.registros-originales, .info-row:not(:first-child)');
+    dynamicElements.forEach(el => el.remove());}
