@@ -3,8 +3,9 @@ import { loadData } from './dataLoader.js';
 import { setupForm } from './formHandler.js';
 import { setupFilters, getActiveFilters } from './filters.js';
 import { initSearch } from './search.js';
-import { clearModal } from './modal.js'; // 👈 Importar clearModal
+import { clearModal } from './modal.js';
 import { supabase } from './supabaseClient.js';
+import { updateMarkerSizes } from './markerManager.js'; // 👈 Importar escala dinámica
 
 // 🚀 Inicialización principal
 document.addEventListener('DOMContentLoaded', () => {
@@ -40,15 +41,15 @@ document.addEventListener('DOMContentLoaded', () => {
         modal.show();
     }
 
-    // 🔥 AQUÍ VA EL CÓDIGO DEL MODAL INFO - Limpiar modal antes de mostrar contenido
+    // 🔥 Limpiar modal antes de mostrar contenido
     const infoModalEl = document.getElementById('infoModal');
     if (infoModalEl) {
         infoModalEl.addEventListener('show.bs.modal', () => {
-            clearModal(); // 👈 Limpiar contenido previo del modal
+            clearModal();
         });
     }
 
-    // Botón para abrir modal manualmente (si lo necesitas)
+    // Botón para abrir modal manualmente
     const openModalBtn = document.getElementById('openModalBtn');
     if (openModalBtn && submitModalEl) {
         openModalBtn.addEventListener('click', () => {
@@ -84,6 +85,10 @@ document.addEventListener('DOMContentLoaded', () => {
             // Aquí puedes usar `data` para mostrar en tu mapa o UI
         });
     }
+
+    // 👇 Eventos para actualizar tamaño de marcadores según zoom
+    map.on('zoom', () => updateMarkerSizes(map));
+    map.on('load', () => updateMarkerSizes(map));
 });
 
 // 🔁 Auto-refresh controlado
@@ -100,7 +105,7 @@ function disableAutoRefresh() {
 // 🔄 Auto-refresh del mapa cada 10s (solo si no hay filtros ni popup abierto)
 setInterval(() => {
     const popupVisible = document.querySelector('.mapboxgl-popup.open');
-    const modalVisible = document.querySelector('.modal.show'); // 👈 También verificar modales abiertos
+    const modalVisible = document.querySelector('.modal.show');
     const { category, comuna } = getActiveFilters();
     const filtersActive = category !== null || comuna !== null;
 

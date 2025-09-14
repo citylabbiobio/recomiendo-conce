@@ -150,6 +150,39 @@ export function getMarkersStats() {
     };
 }
 
+// Escala dinámica de marcadores con curva exponencial
+export function updateMarkerSizes(map) {
+    const zoom = map.getZoom();
+
+    // Fórmula exponencial: baseSize * factor^(zoom - refZoom)
+    // refZoom = nivel de zoom donde el marcador está en tamaño "normal"
+    const baseSize = 25;   // tamaño en píxeles en zoom ~12
+    const factor = 1.15;   // qué tan rápido crece o disminuye
+    const refZoom = 12;    // referencia de zoom para el tamaño base
+
+    const size = Math.max(
+        15,
+        Math.min(baseSize * Math.pow(factor, zoom - refZoom), 80)
+    );
+
+    markers.forEach(marker => {
+        const el = marker.getElement();
+        const img = el.querySelector('img');
+
+        if (img) {
+            img.style.width = `${size}px`;
+            img.style.height = `${size}px`;
+        }
+
+        const badge = el.querySelector('.marker-badge');
+        if (badge) {
+            badge.style.fontSize = `${Math.max(9, size / 3)}px`;
+            badge.style.padding = `${Math.max(2, size / 12)}px`;
+        }
+    });
+}
+
+
 // Función de debugging
 export function logMarkersInfo() {
     const stats = getMarkersStats();
