@@ -1,13 +1,17 @@
 {
   "name": "recomendacionesSummit",
   "version": "1.0.0",
-  "description": "",
+  "description": "Visualización de recomendaciones con Mapbox y deck.gl",
+  "type": "module",
   "main": "index.js",
   "scripts": {
+    "dev": "echo \"Listo para desarrollo frontend\"",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "private": true,
   "dependencies": {
+    "@deck.gl/aggregation-layers": "^9.1.14",
+    "@deck.gl/mapbox": "^9.1.14",
     "@supabase/supabase-js": "^2.53.0"
   }
 }

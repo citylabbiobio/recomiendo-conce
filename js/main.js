@@ -5,13 +5,12 @@ import { setupFilters, getActiveFilters } from './filters.js';
 import { initSearch } from './search.js';
 import { clearModal } from './modal.js';
 import { supabase } from './supabaseClient.js';
-import { updateMarkerSizes } from './markerManager.js'; // 👈 Importar escala dinámica
+import { updateMarkerSizes } from './markerManager.js';
+import { createHeatmapLayer } from './heatmap.js'; // 👈 Importar capa de calor
 
-// 🚀 Inicialización principal
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     console.log('DOM listo. Inicializando aplicación...');
 
-    // Inicializar módulos
     setupForm();
     initSearch();
     setupFilters({
@@ -21,10 +20,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
     loadData(); // Carga inicial sin filtros
 
+    // 🔥 Agregar capa de calor al mapa
+    try {
+        await createHeatmapLayer(map);
+    } catch (err) {
+        console.error('Error cargando heatmap:', err);
+    }
+
     // Cargar ícono SVG del menú
     loadSVGInline('assets/svg/menu-1.svg', '.menu-icon');
 
-    // FAB y offcanvas (sin apertura automática)
+    // FAB y offcanvas
     const fabMenu = document.getElementById('main-fab-menu');
     const offcanvasElement = document.getElementById('menuOffcanvas');
 
@@ -41,7 +47,7 @@ document.addEventListener('DOMContentLoaded', () => {
         modal.show();
     }
 
-    // 🔥 Limpiar modal antes de mostrar contenido
+    // Limpiar modal antes de mostrar contenido
     const infoModalEl = document.getElementById('infoModal');
     if (infoModalEl) {
         infoModalEl.addEventListener('show.bs.modal', () => {
@@ -81,12 +87,10 @@ document.addEventListener('DOMContentLoaded', () => {
             console.log('Buscando ubicación:', query);
             const data = await geocodeGoogle(query);
             console.log('Resultados Google Maps:', data);
-
-            // Aquí puedes usar `data` para mostrar en tu mapa o UI
         });
     }
 
-    // 👇 Eventos para actualizar tamaño de marcadores según zoom
+    // Eventos para actualizar tamaño de marcadores según zoom
     map.on('zoom', () => updateMarkerSizes(map));
     map.on('load', () => updateMarkerSizes(map));
 });
@@ -102,7 +106,7 @@ function disableAutoRefresh() {
     autoRefreshEnabled = false;
 }
 
-// 🔄 Auto-refresh del mapa cada 10s (solo si no hay filtros ni popup abierto)
+// 🔄 Auto-refresh del mapa cada 10s
 setInterval(() => {
     const popupVisible = document.querySelector('.mapboxgl-popup.open');
     const modalVisible = document.querySelector('.modal.show');
