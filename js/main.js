@@ -1,3 +1,4 @@
+// main.js
 import { map } from './map.js';
 import { loadData } from './dataLoader.js';
 import { setupForm } from './formHandler.js';
@@ -6,7 +7,7 @@ import { initSearch } from './search.js';
 import { clearModal } from './modal.js';
 import { supabase } from './supabaseClient.js';
 import { updateMarkerSizes } from './markerManager.js';
-import { createHeatmapLayer } from './heatmap.js'; // 👈 Importar capa de calor
+import { createHeatmapLayer } from './heatmap.js'; // 👈 Importar grilla hexagonal
 
 document.addEventListener('DOMContentLoaded', async () => {
     console.log('DOM listo. Inicializando aplicación...');
@@ -20,12 +21,18 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     loadData(); // Carga inicial sin filtros
 
-    // 🔥 Agregar capa de calor al mapa
-    try {
-        await createHeatmapLayer(map);
-    } catch (err) {
-        console.error('Error cargando heatmap:', err);
-    }
+    // 🔥 Agregar grilla hexagonal cuando el mapa esté listo
+    map.on('load', async () => {
+        try {
+            await createHeatmapLayer(map);
+            console.log('✅ Grilla hexagonal cargada');
+        } catch (err) {
+            console.error('Error cargando heatmap:', err);
+        }
+
+        // Ajustar marcadores al cargar el mapa
+        updateMarkerSizes(map);
+    });
 
     // Cargar ícono SVG del menú
     loadSVGInline('assets/svg/menu-1.svg', '.menu-icon');
@@ -92,7 +99,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Eventos para actualizar tamaño de marcadores según zoom
     map.on('zoom', () => updateMarkerSizes(map));
-    map.on('load', () => updateMarkerSizes(map));
 });
 
 // 🔁 Auto-refresh controlado

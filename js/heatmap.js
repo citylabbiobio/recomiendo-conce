@@ -1,43 +1,28 @@
-export async function createHeatmapLayer(map) {
-    const res = await fetch('/data/Result_2.json');
-    const rawData = await res.json();
+// heatmap.js
+export function createHeatmapLayer(map) {
+    console.log('⚡ Generando grilla hexagonal...');
 
-    const geojson = rawData.map(poi => ({
-        position: [poi.lon, poi.lat],
-        weight: poi.total_recomendaciones
-    }));
+    const data = [
+        { position: [-73.05, -36.82] },
+        { position: [-73.06, -36.83] },
+        { position: [-73.07, -36.84] },
+        { position: [-73.08, -36.81] }
+    ];
 
     const hexLayer = new deck.HexagonLayer({
         id: 'hex-layer',
-        data: geojson,
+        data,
         getPosition: d => d.position,
-        getElevationWeight: d => d.weight,
-        elevationScale: 50,
+        radius: 200, // metros
+        elevationScale: 4,
         extruded: true,
-        radius: 200,
-        colorRange: [
-            [0, 0, 255],
-            [0, 128, 255],
-            [0, 255, 255],
-            [255, 255, 0],
-            [255, 128, 0],
-            [255, 0, 0]
-        ],
-        coverage: 1,
-        elevationRange: [0, 1000],
-        pickable: true
+        pickable: true,
+        opacity: 0.6
     });
 
-    new deck.DeckGL({
-        map: map,
-        layers: [hexLayer],
-        viewState: {
-            longitude: map.getCenter().lng,
-            latitude: map.getCenter().lat,
-            zoom: map.getZoom(),
-            pitch: map.getPitch(),
-            bearing: map.getBearing()
-        },
-        controller: false
+    const overlay = new deck.MapboxOverlay({
+        layers: [hexLayer]
     });
+
+    map.addControl(overlay);
 }
